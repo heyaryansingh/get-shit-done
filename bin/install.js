@@ -1,15 +1,27 @@
 #!/usr/bin/env node
 
+/**
+ * @fileoverview Installation script for Get Shit Done CLI tool.
+ * Supports both Claude Code and Cursor IDE with global or local installation.
+ * @module bin/install
+ */
+
+'use strict';
+
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const readline = require('readline');
 
-// Colors
+/** @constant {string} ANSI escape code for cyan text */
 const cyan = '\x1b[36m';
+/** @constant {string} ANSI escape code for green text */
 const green = '\x1b[32m';
+/** @constant {string} ANSI escape code for yellow text */
 const yellow = '\x1b[33m';
+/** @constant {string} ANSI escape code for dim text */
 const dim = '\x1b[2m';
+/** @constant {string} ANSI escape code to reset text formatting */
 const reset = '\x1b[0m';
 
 // Get version from package.json
@@ -97,7 +109,13 @@ if (hasHelp) {
 }
 
 /**
- * Expand ~ to home directory (shell doesn't expand in env vars passed to node)
+ * Expands the tilde (~) character to the user's home directory path.
+ * Necessary because shell expansion doesn't occur for environment variables passed to Node.js.
+ * @param {string|undefined} filePath - The file path that may contain a leading ~
+ * @returns {string|undefined} The path with ~ expanded to home directory, or the original value
+ * @example
+ * expandTilde('~/Documents') // Returns '/home/user/Documents' on Linux
+ * expandTilde('/absolute/path') // Returns '/absolute/path' unchanged
  */
 function expandTilde(filePath) {
   if (filePath && filePath.startsWith('~/')) {
@@ -107,7 +125,13 @@ function expandTilde(filePath) {
 }
 
 /**
- * Recursively copy directory, replacing paths in .md files
+ * Recursively copies a directory while replacing path references in markdown files.
+ * Updates ~/.claude/ references to the appropriate platform path prefix.
+ * @param {string} srcDir - Source directory path
+ * @param {string} destDir - Destination directory path
+ * @param {string} pathPrefix - The path prefix to replace ~/.claude/ with
+ * @param {boolean} isCursor - Whether installing for Cursor IDE (true) or Claude Code (false)
+ * @returns {void}
  */
 function copyWithPathReplacement(srcDir, destDir, pathPrefix, isCursor) {
   fs.mkdirSync(destDir, { recursive: true });
@@ -138,7 +162,10 @@ function copyWithPathReplacement(srcDir, destDir, pathPrefix, isCursor) {
 }
 
 /**
- * Install to the specified directory
+ * Installs the GSD commands and skill files to the target directory.
+ * Creates the commands/gsd directory structure and copies all necessary files.
+ * @param {boolean} isGlobal - If true, installs to global config directory; if false, installs locally
+ * @returns {void}
  */
 function install(isGlobal) {
   const src = path.join(__dirname, '..');
@@ -197,7 +224,9 @@ function install(isGlobal) {
 }
 
 /**
- * Prompt for install location
+ * Prompts the user interactively to choose between global and local installation.
+ * Uses readline interface to capture user input from stdin.
+ * @returns {void}
  */
 function promptLocation() {
   const rl = readline.createInterface({
