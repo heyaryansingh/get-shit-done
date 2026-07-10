@@ -7,7 +7,7 @@
     "gsd-cursor": "bin/install.js"
   },
   "scripts": {
-    "test": "node --test test/task-estimation-accuracy.test.js"
+    "test": "node --test test/*.test.js"
   },
   "files": [
     "bin",

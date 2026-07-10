@@ -108,6 +108,15 @@ function suggestCommands(query, maxResults = 5) {
 
   const normalized = query.toLowerCase().replace(/^\/?(gsd:?)?/, '');
 
+  // A bare "/gsd", "gsd", or "gsd:" with no subcommand normalizes to an
+  // empty string. Without this guard it falls through to fuzzy scoring,
+  // where an empty normalized string trivially "contains"/"prefixes" every
+  // command name, producing a meaningless ranked "Did you mean" list
+  // instead of the full command listing a blank subcommand should show.
+  if (!normalized) {
+    return commands.map((name) => ({ name, distance: 0, description: getCommandDescription(name) }));
+  }
+
   // Exact match
   if (commands.includes(normalized)) {
     return [{ name: normalized, distance: 0, description: getCommandDescription(normalized) }];
@@ -171,8 +180,12 @@ function formatSuggestions(query, suggestions) {
 // CLI entry point
 if (require.main === module) {
   const query = process.argv[2] || '';
+  const normalizedQuery = query.toLowerCase().replace(/^\/?(gsd:?)?/, '');
   const suggestions = suggestCommands(query);
-  process.stdout.write(formatSuggestions(query, suggestions));
+  // Pass the normalized query so a bare "/gsd"/"gsd:" with no subcommand
+  // (normalizes to '') is formatted as a full command listing, not a
+  // falsely-labeled "Exact match" against whichever command sorts first.
+  process.stdout.write(formatSuggestions(normalizedQuery, suggestions));
 }
 
 module.exports = { suggestCommands, loadCommands, levenshtein, formatSuggestions };
