@@ -6,6 +6,9 @@
     "get-shit-done-cursor": "bin/install.js",
     "gsd-cursor": "bin/install.js"
   },
+  "scripts": {
+    "test": "node --test test/task-estimation-accuracy.test.js"
+  },
   "files": [
     "bin",
     "commands",
