@@ -9,6 +9,9 @@
   "scripts": {
     "test": "node --test test/*.test.js"
   },
+  "dependencies": {
+    "chalk": "^4.1.2"
+  },
   "files": [
     "bin",
     "commands",

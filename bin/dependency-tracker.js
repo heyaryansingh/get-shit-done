@@ -22,7 +22,8 @@ const chalk = require('chalk');
 const DEPENDENCY_FILE = path.join(process.cwd(), '.gsd-dependencies.json');
 
 class DependencyTracker {
-  constructor() {
+  constructor(filePath = DEPENDENCY_FILE) {
+    this.filePath = filePath;
     this.dependencies = this.load();
   }
 
@@ -30,9 +31,9 @@ class DependencyTracker {
    * Load dependencies from file or create empty structure
    */
   load() {
-    if (fs.existsSync(DEPENDENCY_FILE)) {
+    if (fs.existsSync(this.filePath)) {
       try {
-        return JSON.parse(fs.readFileSync(DEPENDENCY_FILE, 'utf8'));
+        return JSON.parse(fs.readFileSync(this.filePath, 'utf8'));
       } catch (err) {
         console.error(chalk.red(`Error loading dependencies: ${err.message}`));
         return { tasks: {}, completed: [] };
@@ -47,7 +48,7 @@ class DependencyTracker {
   save() {
     try {
       fs.writeFileSync(
-        DEPENDENCY_FILE,
+        this.filePath,
         JSON.stringify(this.dependencies, null, 2),
         'utf8'
       );
@@ -320,11 +321,12 @@ class DependencyTracker {
 }
 
 // CLI Interface
-const tracker = new DependencyTracker();
-const args = process.argv.slice(2);
-const command = args[0];
+if (require.main === module) {
+  const tracker = new DependencyTracker();
+  const args = process.argv.slice(2);
+  const command = args[0];
 
-try {
+  try {
   switch (command) {
     case 'add':
       if (args.length < 3) {
@@ -439,7 +441,10 @@ try {
       console.log('  status                   - Show tracker status');
       console.log();
   }
-} catch (err) {
-  console.error(chalk.red(`Error: ${err.message}`));
-  process.exit(1);
+  } catch (err) {
+    console.error(chalk.red(`Error: ${err.message}`));
+    process.exit(1);
+  }
 }
+
+module.exports = { DependencyTracker };
