@@ -445,6 +445,22 @@ function main() {
       console.log("Categories:", getCategories().join(", "));
       break;
 
+    case "import": {
+      const importPath = args[1];
+      if (!importPath) {
+        console.error("Usage: task-templates import <path>");
+        process.exit(1);
+      }
+      try {
+        const merged = importTemplates(importPath);
+        console.log(`Imported templates from ${importPath}. ${Object.keys(merged).length} template(s) now available.`);
+      } catch (err) {
+        console.error(err.message);
+        process.exit(1);
+      }
+      break;
+    }
+
     default:
       console.log(`
 get-shit-done Task Templates
@@ -455,6 +471,7 @@ Usage:
   task-templates create <name> [options]  Create a task from template
   task-templates categories               List all categories
   task-templates export [path]            Export templates to JSON
+  task-templates import <path>            Import custom templates from JSON
 
 Options for create:
   --title=<title>    Set the task title
