@@ -78,7 +78,7 @@ function generateId() {
  * @returns {Date} Next due date.
  */
 function nextDueDate(fromDate, frequency) {
-  const d = new Date(fromDate);
+  const d = parseLocalDate(fromDate);
   switch (frequency) {
     case Frequency.DAILY:
       d.setDate(d.getDate() + 1);
@@ -90,12 +90,47 @@ function nextDueDate(fromDate, frequency) {
       d.setDate(d.getDate() + 14);
       break;
     case Frequency.MONTHLY:
-      d.setMonth(d.getMonth() + 1);
+      addMonthClamped(d);
       break;
     default:
       d.setDate(d.getDate() + 1);
   }
   return d;
+}
+
+/**
+ * Advance a date by one calendar month, clamping to the last day of the target
+ * month. Date.setMonth overflows instead of clamping, so a monthly task due on
+ * Jan 31 jumped to Mar 2 or 3 and skipped February entirely.
+ * @param {Date} d - Date to advance, mutated in place.
+ * @returns {Date} The same date object.
+ */
+function addMonthClamped(d) {
+  const day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + 1);
+  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(day, lastDay));
+  return d;
+}
+
+/**
+ * Parse a value into a local-midnight Date.
+ *
+ * `new Date('2024-01-31')` is parsed as UTC midnight, which is the previous day
+ * in every timezone west of Greenwich. Stored due dates are plain YYYY-MM-DD
+ * strings, so they have to be read as local dates or everything is off by one.
+ * @param {Date|string|number} value - Date, YYYY-MM-DD string, or timestamp.
+ * @returns {Date} Date at local midnight for date-only strings.
+ */
+function parseLocalDate(value) {
+  if (typeof value === 'string') {
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value.trim());
+    if (match) {
+      return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+  }
+  return new Date(value);
 }
 
 /**
@@ -106,7 +141,7 @@ function nextDueDate(fromDate, frequency) {
 function isDue(rec) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  const due = new Date(rec.next_due);
+  const due = parseLocalDate(rec.next_due);
   due.setHours(0, 0, 0, 0);
   return due <= today;
 }
@@ -117,8 +152,10 @@ function isDue(rec) {
  * @returns {string} Formatted date string.
  */
 function formatDate(d) {
-  const date = new Date(d);
-  return date.toISOString().split('T')[0];
+  const date = parseLocalDate(d);
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
 }
 
 // ---- Commands ----
@@ -301,6 +338,13 @@ ${bold}Examples:${reset}
   task-recurrence done "Review PRs"
   task-recurrence list
 `);
+}
+
+module.exports = { Frequency, nextDueDate, parseLocalDate, formatDate, isDue };
+
+// Only run the CLI when invoked directly, so the date helpers can be required.
+if (require.main !== module) {
+  return;
 }
 
 const args = process.argv.slice(2);
