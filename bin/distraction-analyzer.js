@@ -69,15 +69,22 @@ function saveDistractions(data) {
 function logDistraction(description, category, duration) {
   const data = loadDistractions();
 
+  // One clock for all four fields. hour and dayOfWeek are local, and the
+  // 'day' period filters from local midnight, so a UTC date key put an
+  // evening distraction on a different day than the rest of its own record.
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+
   const distraction = {
     id: Date.now().toString(),
     description: description,
     category: category || 'other',
     duration: parseInt(duration) || 0, // minutes
-    timestamp: new Date().toISOString(),
-    date: new Date().toISOString().split('T')[0],
-    hour: new Date().getHours(),
-    dayOfWeek: new Date().getDay(),
+    timestamp: now.toISOString(),
+    date: `${now.getFullYear()}-${month}-${day}`,
+    hour: now.getHours(),
+    dayOfWeek: now.getDay(),
   };
 
   data.distractions.push(distraction);

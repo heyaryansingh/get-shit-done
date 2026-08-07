@@ -30,6 +30,22 @@ const os = require('os');
 const ANALYTICS_FILE = path.join(os.homedir(), '.get-shit-done', 'analytics.json');
 
 /**
+ * Format a date as YYYY-MM-DD in the user's own timezone.
+ *
+ * toISOString() is UTC, so west of Greenwich a late-evening completion is
+ * bucketed into tomorrow's day while its recorded hour stays local, and east
+ * of Greenwich it lands on yesterday.
+ *
+ * @param {Date} date - Date to format.
+ * @returns {string} Local date as YYYY-MM-DD.
+ */
+function formatDate(date) {
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${date.getFullYear()}-${month}-${day}`;
+}
+
+/**
  * Path to tasks history file
  * @type {string}
  */
@@ -145,7 +161,7 @@ function saveAnalytics(analytics) {
  */
 function recordTaskEvent(task, eventType) {
   const analytics = loadAnalytics();
-  const today = new Date().toISOString().split('T')[0];
+  const today = formatDate(new Date());
   const hour = new Date().getHours();
 
   // Initialize daily stats if needed
@@ -324,8 +340,8 @@ function generateWeeklyReport() {
   const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
 
   const weeklyData = {
-    startDate: weekAgo.toISOString().split('T')[0],
-    endDate: today.toISOString().split('T')[0],
+    startDate: formatDate(weekAgo),
+    endDate: formatDate(today),
     totalTasksCompleted: 0,
     totalTasksCreated: 0,
     totalMinutesWorked: 0,
@@ -335,7 +351,7 @@ function generateWeeklyReport() {
 
   // Collect data for the week
   for (let d = new Date(weekAgo); d <= today; d.setDate(d.getDate() + 1)) {
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = formatDate(d);
     const dayStats = analytics.dailyStats[dateStr] || {
       date: dateStr,
       tasksCreated: 0,
@@ -525,6 +541,7 @@ Examples:
 
 // Export for use as module
 module.exports = {
+  formatDate,
   recordTaskEvent,
   calculateSummary,
   generateWeeklyReport,
