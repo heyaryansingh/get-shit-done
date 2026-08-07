@@ -26,6 +26,20 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const readline = require('readline');
+const { formatDate } = require('./task-recurrence');
+
+/**
+ * The local calendar day a session belongs to.
+ *
+ * startTime is stored as a UTC ISO timestamp, so matching it against a date
+ * string by prefix buckets an evening session into tomorrow west of
+ * Greenwich, and an early-morning one into yesterday east of it.
+ * @param {Object} session - Session with an ISO startTime.
+ * @returns {string} Local date as YYYY-MM-DD.
+ */
+function sessionDay(session) {
+  return formatDate(new Date(session.startTime));
+}
 
 /**
  * Path to focus session data file
@@ -238,7 +252,7 @@ async function startTimer(options = {}) {
 
   // Update streak if focus session completed
   if (session.completed && type === 'focus') {
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDate(new Date());
     updateStreak(focusData, today);
   }
 
@@ -250,12 +264,12 @@ async function startTimer(options = {}) {
     playNotificationSound();
 
     // Count completed pomodoros today
-    const today = new Date().toISOString().split('T')[0];
+    const today = formatDate(new Date());
     const todayPomodoros = focusData.sessions.filter(
       (s) =>
         s.completed &&
         s.type === 'focus' &&
-        s.startTime.startsWith(today)
+        sessionDay(s) === today
     ).length;
 
     console.log(`🍅 Today's pomodoros: ${todayPomodoros}`);
@@ -286,10 +300,10 @@ function playNotificationSound() {
 
 /**
  * Calculate focus statistics
+ * @param {Object} [focusData] - Focus data; read from disk when omitted.
  * @returns {FocusStats} Statistics object
  */
-function calculateStats() {
-  const focusData = loadFocusData();
+function calculateStats(focusData = loadFocusData()) {
   const { sessions, streakData } = focusData;
 
   const focusSessions = sessions.filter((s) => s.type === 'focus');
@@ -298,8 +312,8 @@ function calculateStats() {
   const totalMinutes = completedFocus.reduce((sum, s) => sum + s.duration, 0);
 
   // Today's focus time
-  const today = new Date().toISOString().split('T')[0];
-  const todaySessions = completedFocus.filter((s) => s.startTime.startsWith(today));
+  const today = formatDate(new Date());
+  const todaySessions = completedFocus.filter((s) => sessionDay(s) === today);
   const todayMinutes = todaySessions.reduce((sum, s) => sum + s.duration, 0);
 
   // Daily totals (last 7 days)
@@ -307,10 +321,10 @@ function calculateStats() {
   for (let i = 0; i < 7; i++) {
     const d = new Date();
     d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = formatDate(d);
 
     const dayMinutes = completedFocus
-      .filter((s) => s.startTime.startsWith(dateStr))
+      .filter((s) => sessionDay(s) === dateStr)
       .reduce((sum, s) => sum + s.duration, 0);
 
     dailyTotals[dateStr] = dayMinutes;
