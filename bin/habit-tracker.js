@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { formatDate } = require('./task-recurrence');
 
 const HABITS_FILE = path.join(os.homedir(), '.gsd-habits.json');
 
@@ -44,10 +45,14 @@ function saveHabits(data) {
 }
 
 /**
- * Get today's date string
+ * Get today's date string in the user's own timezone.
+ *
+ * toISOString() is UTC, so east of Greenwich an evening completion lands on
+ * the previous day's key and the streak reads as broken the next morning.
+ * @returns {string} Today's local date as YYYY-MM-DD.
  */
 function getTodayString() {
-  return new Date().toISOString().split('T')[0];
+  return formatDate(new Date());
 }
 
 /**
@@ -149,11 +154,11 @@ function calculateStreak(habitId, data) {
   let streak = 0;
   const today = new Date();
 
-  // Check backwards from today
+  // Check backwards from today, using the same local date keys completeHabit writes
   for (let i = 0; i < 365; i++) {
     const date = new Date(today);
     date.setDate(date.getDate() - i);
-    const dateStr = date.toISOString().split('T')[0];
+    const dateStr = formatDate(date);
 
     const count = completions[dateStr] || 0;
 
@@ -303,5 +308,9 @@ module.exports = {
   listHabits,
   completeHabit,
   showStats,
-  deleteHabit
+  deleteHabit,
+  // Exported so the date and streak logic can be tested without a home directory.
+  getTodayString,
+  calculateStreak,
+  isCompletedToday
 };
