@@ -127,16 +127,30 @@ function createTimeBlock(task, duration, startTime, category = 'focus') {
 }
 
 /**
+ * Start of the analysis window, in local time.
+ *
+ * 'week' walks back to the most recent Sunday, 'day' stays on today. Either
+ * way the result is pinned to local midnight. setDate and setHours mutate the
+ * receiver and return a timestamp, so `new Date(now.setDate(...))` kept the
+ * current clock time and silently excluded every block earlier in the day.
+ */
+function periodStart(now = new Date(), period = 'day') {
+  const start = new Date(now.getTime());
+  start.setHours(0, 0, 0, 0);
+  if (period === 'week') {
+    start.setDate(start.getDate() - start.getDay());
+  }
+  return start;
+}
+
+/**
  * Analyze calendar fragmentation
  */
 function analyzeCalendar(options = {}) {
   const data = loadTimeBlocks();
   const { week = false } = options;
 
-  const now = new Date();
-  const startDate = week
-    ? new Date(now.setDate(now.getDate() - now.getDay()))
-    : new Date(now.setHours(0, 0, 0, 0));
+  const startDate = periodStart(new Date(), week ? 'week' : 'day');
 
   const relevantBlocks = data.blocks.filter(b =>
     new Date(b.startTime) >= startDate
@@ -236,8 +250,7 @@ function optimizeSchedule() {
 function generateReport() {
   const data = loadTimeBlocks();
 
-  const now = new Date();
-  const weekStart = new Date(now.setDate(now.getDate() - now.getDay()));
+  const weekStart = periodStart(new Date(), 'week');
   const weekBlocks = data.blocks.filter(b =>
     new Date(b.startTime) >= weekStart
   );
@@ -359,4 +372,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { createTimeBlock, analyzeCalendar, optimizeSchedule, generateReport };
+module.exports = { createTimeBlock, analyzeCalendar, optimizeSchedule, generateReport, periodStart };
