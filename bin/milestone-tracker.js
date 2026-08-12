@@ -13,6 +13,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { formatDate } = require('./task-recurrence');
 
 class MilestoneTracker {
   constructor(planningDir = '.planning') {
@@ -161,9 +162,10 @@ class MilestoneTracker {
     const lastTask = summaries[summaries.length - 1].timestamp;
     const daysElapsed = (lastTask - firstTask) / (1000 * 60 * 60 * 24);
 
-    const tasksPerDay = daysElapsed > 0
-      ? summaries.length / daysElapsed
-      : 0;
+    // Five summaries written in one afternoon span a fraction of a day, which
+    // divides out to hundreds of tasks per day and a completion date somewhere
+    // next week. A day is the smallest span this metric can honestly measure.
+    const tasksPerDay = summaries.length / Math.max(daysElapsed, 1);
 
     // Estimate phases (assuming 3 tasks per phase)
     const phasesPerWeek = tasksPerDay * 7 / 3;
@@ -196,9 +198,11 @@ class MilestoneTracker {
     completionDate.setDate(completionDate.getDate() + daysRemaining);
 
     return {
-      estimated_date: completionDate.toISOString().split('T')[0],
+      // toISOString reports the UTC day, so an estimate made on a Tuesday
+      // evening west of Greenwich reads as Wednesday.
+      estimated_date: formatDate(completionDate),
       days_remaining: daysRemaining,
-      confidence: this.calculateConfidence(velocity.total_tasks_completed),
+      confidence: this.calculateConfidence(velocity.total_tasks_completed || 0),
     };
   }
 

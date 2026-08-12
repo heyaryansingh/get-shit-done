@@ -5,6 +5,7 @@ const os = require('os');
 const path = require('path');
 
 const MilestoneTracker = require('../bin/milestone-tracker');
+const { formatDate } = require('../bin/task-recurrence');
 
 /**
  * Build a throwaway .planning tree.
@@ -160,6 +161,82 @@ test('generateReport emits parseable JSON', () => {
   assert.strictEqual(payload.milestone_progress.total_phases, 3);
   assert.strictEqual(payload.phases.length, 3);
   assert.ok('estimated_completion' in payload);
+});
+
+/** Backdate a summary file so velocity has a real time span to measure. */
+function setMtime(dir, file, daysAgo) {
+  const when = new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000);
+  const target = path.join(dir, 'summaries', file);
+  fs.utimesSync(target, when, when);
+}
+
+test('a burst of summaries in one afternoon does not inflate velocity', () => {
+  const dir = planningDir({
+    roadmap: ROADMAP,
+    summaries: ['01-a-SUMMARY.md', '01-b-SUMMARY.md']
+  });
+  // Two summaries one hour apart span 1/24 of a day.
+  setMtime(dir, '01-a-SUMMARY.md', 1 / 24);
+  setMtime(dir, '01-b-SUMMARY.md', 0);
+
+  const velocity = new MilestoneTracker(dir).calculateVelocity();
+
+  // Dividing by the raw span would report 48 tasks/day off one afternoon.
+  assert.strictEqual(velocity.tasks_per_day, '2.00');
+});
+
+test('velocity measures real elapsed days when the span is longer', () => {
+  const dir = planningDir({
+    roadmap: ROADMAP,
+    summaries: ['01-a-SUMMARY.md', '01-b-SUMMARY.md', '02-c-SUMMARY.md']
+  });
+  setMtime(dir, '01-a-SUMMARY.md', 10);
+  setMtime(dir, '01-b-SUMMARY.md', 5);
+  setMtime(dir, '02-c-SUMMARY.md', 0);
+
+  const velocity = new MilestoneTracker(dir).calculateVelocity();
+
+  assert.strictEqual(velocity.days_active, 10);
+  assert.strictEqual(velocity.tasks_per_day, '0.30');
+  assert.strictEqual(velocity.total_tasks_completed, 3);
+});
+
+test('the estimated completion date is a local calendar day', () => {
+  const dir = planningDir({
+    roadmap: ROADMAP,
+    phases: { '01-foundation': ['01-a-PLAN.md'] },
+    summaries: ['01-a-SUMMARY.md', '02-b-SUMMARY.md']
+  });
+  setMtime(dir, '01-a-SUMMARY.md', 20);
+  setMtime(dir, '02-b-SUMMARY.md', 0);
+
+  const completion = new MilestoneTracker(dir).estimateCompletion();
+
+  assert.match(completion.estimated_date, /^\d{4}-\d{2}-\d{2}$/);
+
+  // toISOString would report the UTC day, which rolls over early for anyone
+  // west of Greenwich.
+  const expected = new Date();
+  expected.setDate(expected.getDate() + completion.days_remaining);
+  assert.strictEqual(completion.estimated_date, formatDate(expected));
+});
+
+test('confidence is reported from the number of completed tasks', () => {
+  const tracker = new MilestoneTracker('.planning');
+
+  assert.strictEqual(tracker.calculateConfidence(0), 'Low');
+  assert.strictEqual(tracker.calculateConfidence(4), 'Low');
+  assert.strictEqual(tracker.calculateConfidence(10), 'Medium');
+  assert.strictEqual(tracker.calculateConfidence(20), 'High');
+});
+
+test('an unmeasurable velocity reports Unknown rather than a date', () => {
+  const dir = planningDir({ roadmap: ROADMAP });
+
+  const completion = new MilestoneTracker(dir).estimateCompletion();
+
+  assert.strictEqual(completion.estimated_date, 'Unknown');
+  assert.strictEqual(completion.days_remaining, 'Unknown');
 });
 
 test('generateReport text output lists every phase', () => {
