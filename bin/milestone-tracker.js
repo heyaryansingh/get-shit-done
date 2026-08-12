@@ -55,8 +55,6 @@ class MilestoneTracker {
    * Determine phase status
    */
   getPhaseStatus(phaseNum) {
-    const phaseDir = path.join(this.phasesDir, String(phaseNum).padStart(2, '0') + '-*');
-
     // Check if phase directory exists
     const matchingDirs = this.glob(this.phasesDir, String(phaseNum).padStart(2, '0'));
 
@@ -64,12 +62,10 @@ class MilestoneTracker {
       return 'not_started';
     }
 
-    const phaseDir
-
-Actual = matchingDirs[0];
+    const phaseDir = matchingDirs[0];
 
     // Count plans and summaries
-    const plans = this.getPlanFiles(phaseDirActual);
+    const plans = this.getPlanFiles(phaseDir);
     const summaries = this.getSummaryFiles(phaseNum);
 
     if (summaries.length === plans.length && plans.length > 0) {
