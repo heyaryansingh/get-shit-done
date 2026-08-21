@@ -27,15 +27,85 @@ function saveGoals(data) {
 }
 
 /**
+ * Parse a deadline supplied on the command line.
+ *
+ * `new Date('next friday').toISOString()` throws RangeError, which used to
+ * take the whole command down with a stack trace. A YYYY-MM-DD deadline is
+ * also read as UTC midnight by the Date constructor, i.e. the previous day
+ * everywhere west of Greenwich, so date-only input is parsed as local midnight.
+ *
+ * @param {string|undefined|null} value Raw deadline argument.
+ * @returns {Date|null} Parsed date, or null when no deadline was given.
+ * @throws {Error} When the value is present but not a usable date.
+ */
+function parseDeadline(value) {
+  if (value === undefined || value === null || String(value).trim() === '') {
+    return null;
+  }
+
+  const text = String(value).trim();
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
+  const parsed = dateOnly
+    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+    : new Date(text);
+
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error(`Invalid deadline: ${text}`);
+  }
+
+  return parsed;
+}
+
+/**
+ * Set a goal's progress and keep its status in step.
+ *
+ * Milestone completion used to write `progress` directly, so a goal could sit
+ * at 100% while still reporting `in-progress`, and a non-numeric CLI argument
+ * could store NaN. Both paths go through here now.
+ *
+ * @param {Object} goal Goal to update, mutated in place.
+ * @param {number|string} value Progress percentage.
+ * @returns {number} The clamped progress that was stored.
+ * @throws {Error} When the value is not a number.
+ */
+function applyProgress(goal, value) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    throw new Error(`Invalid progress: ${value}`);
+  }
+
+  goal.progress = Math.min(100, Math.max(0, numeric));
+
+  if (goal.progress === 100) {
+    goal.status = 'completed';
+    goal.completedAt = goal.completedAt || new Date().toISOString();
+  } else {
+    goal.status = 'in-progress';
+    delete goal.completedAt;
+  }
+
+  return goal.progress;
+}
+
+/**
  * Add a new goal
  */
 function addGoal(name, deadline, category = 'personal') {
   const data = loadGoals();
 
+  let parsedDeadline;
+  try {
+    parsedDeadline = parseDeadline(deadline);
+  } catch (error) {
+    console.log(`❌ ${error.message}`);
+    console.log('   Use a date such as 2026-12-31.');
+    return false;
+  }
+
   const goal = {
     id: `goal_${Date.now()}`,
     name,
-    deadline: deadline ? new Date(deadline).toISOString() : null,
+    deadline: parsedDeadline ? parsedDeadline.toISOString() : null,
     category,
     progress: 0,
     milestones: [],
@@ -110,11 +180,11 @@ function updateProgress(goalId, progress) {
   }
 
   const oldProgress = goal.progress;
-  goal.progress = Math.min(100, Math.max(0, progress));
-
-  if (goal.progress === 100) {
-    goal.status = 'completed';
-    goal.completedAt = new Date().toISOString();
+  try {
+    applyProgress(goal, progress);
+  } catch (error) {
+    console.log(`❌ ${error.message}`);
+    return false;
   }
 
   if (saveGoals(data)) {
@@ -184,7 +254,7 @@ function completeMilestone(goalId, milestoneIndex) {
 
   // Auto-update goal progress based on milestones
   const completedCount = goal.milestones.filter(m => m.completed).length;
-  goal.progress = Math.round((completedCount / goal.milestones.length) * 100);
+  applyProgress(goal, Math.round((completedCount / goal.milestones.length) * 100));
 
   if (saveGoals(data)) {
     console.log(`✅ Milestone completed: ${goal.milestones[index].name}`);
@@ -269,10 +339,22 @@ function getProgressBar(progress, width = 20) {
 }
 
 function getDaysRemaining(deadline) {
+  let end;
+  try {
+    end = parseDeadline(deadline);
+  } catch (error) {
+    return null;
+  }
+  if (!end) {
+    return null;
+  }
+
+  // Compare calendar days, so a deadline later today reads as 0 days left
+  // rather than as a fraction that rounds to 1.
   const now = new Date();
-  const end = new Date(deadline);
-  const diff = end - now;
-  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfEnd = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+  return Math.round((startOfEnd - startOfToday) / (1000 * 60 * 60 * 24));
 }
 
 /**
@@ -358,6 +440,9 @@ if (require.main === module) {
 }
 
 module.exports = {
+  parseDeadline,
+  applyProgress,
+  getDaysRemaining,
   addGoal,
   listGoals,
   updateProgress,
