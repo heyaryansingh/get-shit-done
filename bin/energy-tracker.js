@@ -9,6 +9,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { readJson, writeJson } = require('./store');
 const os = require('os');
 
 const DATA_DIR = path.join(os.homedir(), '.gsd', 'energy-data');
@@ -45,16 +46,11 @@ class EnergyTracker {
   }
 
   loadData() {
-    if (fs.existsSync(ENERGY_LOG)) {
-      const data = fs.readFileSync(ENERGY_LOG, 'utf8');
-      this.energyLog = JSON.parse(data);
-    } else {
-      this.energyLog = [];
-    }
+    this.energyLog = readJson(ENERGY_LOG, []);
   }
 
   saveData() {
-    fs.writeFileSync(ENERGY_LOG, JSON.stringify(this.energyLog, null, 2));
+    writeJson(ENERGY_LOG, this.energyLog);
   }
 
   /**

@@ -11,6 +11,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { readJson, writeJson } = require('./store');
 
 const cyan = '\x1b[36m';
 const green = '\x1b[32m';
@@ -41,14 +42,7 @@ const Frequency = {
  * @returns {Array<Object>} Array of recurrence definitions.
  */
 function loadRecurrences() {
-  try {
-    if (fs.existsSync(RECURRENCE_FILE)) {
-      return JSON.parse(fs.readFileSync(RECURRENCE_FILE, 'utf8'));
-    }
-  } catch (e) {
-    console.error(`${red}Error loading recurrences: ${e.message}${reset}`);
-  }
-  return [];
+  return readJson(RECURRENCE_FILE, []);
 }
 
 /**
@@ -56,11 +50,7 @@ function loadRecurrences() {
  * @param {Array<Object>} recurrences - The recurrence definitions.
  */
 function saveRecurrences(recurrences) {
-  const dir = path.dirname(RECURRENCE_FILE);
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-  fs.writeFileSync(RECURRENCE_FILE, JSON.stringify(recurrences, null, 2), 'utf8');
+  writeJson(RECURRENCE_FILE, recurrences);
 }
 
 /**

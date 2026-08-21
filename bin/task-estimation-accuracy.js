@@ -22,6 +22,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { readJson, writeJson } = require('./store');
 const os = require('os');
 
 /**
@@ -69,15 +70,7 @@ const HISTORY_FILE = path.join(os.homedir(), '.get-shit-done', 'history.json');
  * @returns {TaskRecord[]} Array of task records
  */
 function loadHistory() {
-  try {
-    if (fs.existsSync(HISTORY_FILE)) {
-      const data = fs.readFileSync(HISTORY_FILE, 'utf-8');
-      return JSON.parse(data);
-    }
-  } catch (error) {
-    console.error('Error loading history:', error.message);
-  }
-  return [];
+  return readJson(HISTORY_FILE, []);
 }
 
 /**

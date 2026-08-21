@@ -17,6 +17,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { readJson, writeJson } = require('./store');
 const chalk = require('chalk');
 
 const DEPENDENCY_FILE = path.join(process.cwd(), '.gsd-dependencies.json');
@@ -31,30 +32,14 @@ class DependencyTracker {
    * Load dependencies from file or create empty structure
    */
   load() {
-    if (fs.existsSync(this.filePath)) {
-      try {
-        return JSON.parse(fs.readFileSync(this.filePath, 'utf8'));
-      } catch (err) {
-        console.error(chalk.red(`Error loading dependencies: ${err.message}`));
-        return { tasks: {}, completed: [] };
-      }
-    }
-    return { tasks: {}, completed: [] };
+    return readJson(this.filePath, { tasks: {}, completed: [] });
   }
 
   /**
    * Save dependencies to file
    */
   save() {
-    try {
-      fs.writeFileSync(
-        this.filePath,
-        JSON.stringify(this.dependencies, null, 2),
-        'utf8'
-      );
-    } catch (err) {
-      console.error(chalk.red(`Error saving dependencies: ${err.message}`));
-    }
+    writeJson(this.filePath, this.dependencies);
   }
 
   /**

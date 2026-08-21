@@ -27,6 +27,7 @@ const path = require('path');
 const os = require('os');
 const readline = require('readline');
 const { formatDate } = require('./task-recurrence');
+const { readJson, writeJson } = require('./store');
 
 /**
  * The local calendar day a session belongs to.
@@ -97,19 +98,11 @@ function ensureDirectoryExists() {
  * @returns {Object} Focus data
  */
 function loadFocusData() {
-  try {
-    if (fs.existsSync(FOCUS_FILE)) {
-      const data = fs.readFileSync(FOCUS_FILE, 'utf-8');
-      return JSON.parse(data);
-    }
-  } catch (error) {
-    console.error('Error loading focus data:', error.message);
-  }
-  return {
+  return readJson(FOCUS_FILE, {
     sessions: [],
     settings: { ...DEFAULTS },
     streakData: { current: 0, longest: 0, lastActiveDate: null },
-  };
+  });
 }
 
 /**
@@ -117,8 +110,7 @@ function loadFocusData() {
  * @param {Object} data - Data to save
  */
 function saveFocusData(data) {
-  ensureDirectoryExists();
-  fs.writeFileSync(FOCUS_FILE, JSON.stringify(data, null, 2));
+  writeJson(FOCUS_FILE, data);
 }
 
 /**

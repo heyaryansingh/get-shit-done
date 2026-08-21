@@ -9,6 +9,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const { formatDate } = require('./task-recurrence');
+const { readJson, writeJson } = require('./store');
 
 const HABITS_FILE = path.join(os.homedir(), '.gsd-habits.json');
 
@@ -16,32 +17,14 @@ const HABITS_FILE = path.join(os.homedir(), '.gsd-habits.json');
  * Load habits from file
  */
 function loadHabits() {
-  try {
-    if (fs.existsSync(HABITS_FILE)) {
-      const data = fs.readFileSync(HABITS_FILE, 'utf8');
-      return JSON.parse(data);
-    }
-  } catch (error) {
-    console.error('Error loading habits:', error.message);
-  }
-
-  return {
-    habits: [],
-    completions: {}
-  };
+  return readJson(HABITS_FILE, { habits: [], completions: {} });
 }
 
 /**
  * Save habits to file
  */
 function saveHabits(data) {
-  try {
-    fs.writeFileSync(HABITS_FILE, JSON.stringify(data, null, 2));
-    return true;
-  } catch (error) {
-    console.error('Error saving habits:', error.message);
-    return false;
-  }
+  return writeJson(HABITS_FILE, data);
 }
 
 /**

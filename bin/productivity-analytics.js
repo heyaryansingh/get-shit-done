@@ -21,6 +21,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { readJson, writeJson } = require('./store');
 const os = require('os');
 
 /**
@@ -105,15 +106,7 @@ function ensureDirectoryExists() {
  * @returns {TaskRecord[]} Array of task records
  */
 function loadHistory() {
-  try {
-    if (fs.existsSync(HISTORY_FILE)) {
-      const data = fs.readFileSync(HISTORY_FILE, 'utf-8');
-      return JSON.parse(data);
-    }
-  } catch (error) {
-    console.error('Error loading history:', error.message);
-  }
-  return [];
+  return readJson(HISTORY_FILE, []);
 }
 
 /**
@@ -121,20 +114,12 @@ function loadHistory() {
  * @returns {Object} Analytics data
  */
 function loadAnalytics() {
-  try {
-    if (fs.existsSync(ANALYTICS_FILE)) {
-      const data = fs.readFileSync(ANALYTICS_FILE, 'utf-8');
-      return JSON.parse(data);
-    }
-  } catch (error) {
-    console.error('Error loading analytics:', error.message);
-  }
-  return {
+  return readJson(ANALYTICS_FILE, {
     totalTasks: 0,
     completedTasks: 0,
     dailyStats: {},
     streakData: { current: 0, longest: 0, lastActiveDate: null },
-  };
+  });
 }
 
 /**
@@ -143,8 +128,7 @@ function loadAnalytics() {
  * @returns {void}
  */
 function saveAnalytics(analytics) {
-  ensureDirectoryExists();
-  fs.writeFileSync(ANALYTICS_FILE, JSON.stringify(analytics, null, 2));
+  writeJson(ANALYTICS_FILE, analytics);
 }
 
 /**

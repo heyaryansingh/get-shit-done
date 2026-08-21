@@ -13,6 +13,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { readJson, writeJson } = require('./store');
 
 const DATA_DIR = path.join(process.env.HOME || process.env.USERPROFILE, '.get-shit-done');
 const TASKS_FILE = path.join(DATA_DIR, 'tasks.json');
@@ -22,27 +23,14 @@ const INSIGHTS_FILE = path.join(DATA_DIR, 'insights.json');
  * Load tasks from storage
  */
 function loadTasks() {
-  if (!fs.existsSync(TASKS_FILE)) {
-    return [];
-  }
-  try {
-    const data = fs.readFileSync(TASKS_FILE, 'utf8');
-    return JSON.parse(data);
-  } catch (error) {
-    console.error('Error loading tasks:', error.message);
-    return [];
-  }
+  return readJson(TASKS_FILE, []);
 }
 
 /**
  * Save insights to storage
  */
 function saveInsights(insights) {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-
-  fs.writeFileSync(INSIGHTS_FILE, JSON.stringify(insights, null, 2));
+  writeJson(INSIGHTS_FILE, insights);
 }
 
 /**

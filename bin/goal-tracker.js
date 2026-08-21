@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { readJson, writeJson } = require('./store');
 
 const GOALS_FILE = path.join(os.homedir(), '.gsd-goals.json');
 
@@ -15,29 +16,14 @@ const GOALS_FILE = path.join(os.homedir(), '.gsd-goals.json');
  * Load goals from file
  */
 function loadGoals() {
-  try {
-    if (fs.existsSync(GOALS_FILE)) {
-      const data = fs.readFileSync(GOALS_FILE, 'utf8');
-      return JSON.parse(data);
-    }
-  } catch (error) {
-    console.error('Error loading goals:', error.message);
-  }
-
-  return { goals: [] };
+  return readJson(GOALS_FILE, { goals: [] });
 }
 
 /**
  * Save goals to file
  */
 function saveGoals(data) {
-  try {
-    fs.writeFileSync(GOALS_FILE, JSON.stringify(data, null, 2));
-    return true;
-  } catch (error) {
-    console.error('Error saving goals:', error.message);
-    return false;
-  }
+  return writeJson(GOALS_FILE, data);
 }
 
 /**

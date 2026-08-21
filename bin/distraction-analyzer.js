@@ -18,6 +18,7 @@
 const fs = require('fs');
 const path = require('path');
 const chalk = require('chalk');
+const { readJson, writeJson } = require('./store');
 
 const DATA_DIR = path.join(process.env.HOME || process.env.USERPROFILE, '.gsd');
 const DISTRACTION_FILE = path.join(DATA_DIR, 'distractions.json');
@@ -34,33 +35,17 @@ const CATEGORIES = {
 };
 
 /**
- * Ensure data directory and file exist
- */
-function ensureDataFile() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
-  }
-
-  if (!fs.existsSync(DISTRACTION_FILE)) {
-    fs.writeFileSync(DISTRACTION_FILE, JSON.stringify({ distractions: [] }, null, 2));
-  }
-}
-
-/**
  * Load distraction data
  */
 function loadDistractions() {
-  ensureDataFile();
-  const data = fs.readFileSync(DISTRACTION_FILE, 'utf8');
-  return JSON.parse(data);
+  return readJson(DISTRACTION_FILE, { distractions: [] });
 }
 
 /**
  * Save distraction data
  */
 function saveDistractions(data) {
-  ensureDataFile();
-  fs.writeFileSync(DISTRACTION_FILE, JSON.stringify(data, null, 2));
+  writeJson(DISTRACTION_FILE, data);
 }
 
 /**

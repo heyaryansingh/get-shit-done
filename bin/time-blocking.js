@@ -19,6 +19,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { readJson, writeJson } = require('./store');
 const os = require('os');
 
 const CONFIG_DIR = path.join(os.homedir(), '.get-shit-done');
@@ -33,21 +34,18 @@ if (!fs.existsSync(CONFIG_DIR)) {
  * Load time blocks from storage
  */
 function loadTimeBlocks() {
-  if (!fs.existsSync(TIME_BLOCKS_FILE)) {
-    return {
-      blocks: [],
-      templates: getDefaultTemplates(),
-      settings: getDefaultSettings(),
-    };
-  }
-  return JSON.parse(fs.readFileSync(TIME_BLOCKS_FILE, 'utf8'));
+  return readJson(TIME_BLOCKS_FILE, {
+    blocks: [],
+    templates: getDefaultTemplates(),
+    settings: getDefaultSettings(),
+  });
 }
 
 /**
  * Save time blocks to storage
  */
 function saveTimeBlocks(data) {
-  fs.writeFileSync(TIME_BLOCKS_FILE, JSON.stringify(data, null, 2));
+  writeJson(TIME_BLOCKS_FILE, data);
 }
 
 /**

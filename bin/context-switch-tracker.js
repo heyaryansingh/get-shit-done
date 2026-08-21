@@ -18,6 +18,7 @@
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+const { readJson, writeJson } = require('./store');
 
 const SWITCHES_FILE = path.join(os.homedir(), '.gsd-context-switches.json');
 const DEFAULT_SWITCH_COST_MIN = 15;
@@ -26,29 +27,14 @@ const DEFAULT_SWITCH_COST_MIN = 15;
  * Load switch log from file
  */
 function loadSwitches() {
-  try {
-    if (fs.existsSync(SWITCHES_FILE)) {
-      const data = fs.readFileSync(SWITCHES_FILE, 'utf8');
-      return JSON.parse(data);
-    }
-  } catch (error) {
-    console.error('Error loading context switch log:', error.message);
-  }
-
-  return { switches: [] };
+  return readJson(SWITCHES_FILE, { switches: [] });
 }
 
 /**
  * Save switch log to file
  */
 function saveSwitches(data) {
-  try {
-    fs.writeFileSync(SWITCHES_FILE, JSON.stringify(data, null, 2));
-    return true;
-  } catch (error) {
-    console.error('Error saving context switch log:', error.message);
-    return false;
-  }
+  return writeJson(SWITCHES_FILE, data);
 }
 
 /**
