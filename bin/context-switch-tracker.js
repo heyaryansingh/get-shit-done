@@ -168,7 +168,9 @@ switch (command) {
     break;
   }
   case 'stats': {
-    const days = parseInt(getFlagValue('--days'), 10) || 7;
+    const parsedDays = parseInt(getFlagValue('--days'), 10);
+    // Negative/zero windows put the cutoff in the future and yield negative averages.
+    const days = parsedDays > 0 ? parsedDays : 7;
     showStats(days);
     break;
   }
