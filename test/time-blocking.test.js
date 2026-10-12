@@ -3,7 +3,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 
-const { periodStart } = require('../bin/time-blocking.js');
+const { periodStart, resolveStartTime } = require('../bin/time-blocking.js');
 
 // 2024-03-13 is a Wednesday.
 const WEDNESDAY_AFTERNOON = new Date(2024, 2, 13, 15, 42, 17, 500);
@@ -79,4 +79,17 @@ test('periodStart does not mutate the date it is given', () => {
   periodStart(now, 'week');
 
   assert.strictEqual(now.getTime(), WEDNESDAY_AFTERNOON.getTime());
+});
+
+test('an HH:MM start time resolves to that clock time today', () => {
+  const start = new Date(resolveStartTime('14:05', WEDNESDAY_AFTERNOON));
+  assert.deepStrictEqual(
+    [start.getFullYear(), start.getMonth(), start.getDate(), start.getHours(), start.getMinutes()],
+    [2024, 2, 13, 14, 5]
+  );
+});
+
+test('unparseable start times resolve to null', () => {
+  assert.strictEqual(resolveStartTime('25:00', WEDNESDAY_AFTERNOON), null);
+  assert.strictEqual(resolveStartTime('soon', WEDNESDAY_AFTERNOON), null);
 });

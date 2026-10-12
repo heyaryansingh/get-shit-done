@@ -125,6 +125,22 @@ function createTimeBlock(task, duration, startTime, category = 'focus') {
 }
 
 /**
+ * Turn a --time value into an ISO timestamp.
+ *
+ * The CLI documents HH:MM, which `new Date('14:00')` parses as Invalid Date,
+ * so the block printed "Invalid Date" and never matched analyze/report. HH:MM
+ * is taken as today in local time; full date strings pass through. Returns
+ * null for anything unparseable.
+ */
+function resolveStartTime(time, now = new Date()) {
+  const hhmm = /^([01]?\d|2[0-3]):([0-5]\d)$/.exec(time);
+  const date = hhmm
+    ? new Date(now.getFullYear(), now.getMonth(), now.getDate(), Number(hhmm[1]), Number(hhmm[2]))
+    : new Date(time);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+/**
  * Start of the analysis window, in local time.
  *
  * 'week' walks back to the most recent Sunday, 'day' stays on today. Either
@@ -334,8 +350,19 @@ Examples:
         process.exit(1);
       }
 
-      const duration = parseInt(args[durationIdx + 1]);
-      const startTime = timeIdx !== -1 ? args[timeIdx + 1] : null;
+      const duration = Number(args[durationIdx + 1]);
+      if (!Number.isInteger(duration) || duration <= 0) {
+        console.error('❌ --duration must be a positive whole number of minutes');
+        process.exit(1);
+      }
+      let startTime = null;
+      if (timeIdx !== -1) {
+        startTime = resolveStartTime(args[timeIdx + 1]);
+        if (!startTime) {
+          console.error('❌ --time must be HH:MM or a date/time');
+          process.exit(1);
+        }
+      }
       const category = categoryIdx !== -1 ? args[categoryIdx + 1] : 'focus';
 
       createTimeBlock(task, duration, startTime, category);
@@ -370,4 +397,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { createTimeBlock, analyzeCalendar, optimizeSchedule, generateReport, periodStart };
+module.exports = { createTimeBlock, analyzeCalendar, optimizeSchedule, generateReport, periodStart, resolveStartTime };
