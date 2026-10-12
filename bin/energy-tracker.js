@@ -104,7 +104,13 @@ class EnergyTracker {
     const hourlyData = {};
     const dailyData = {};
 
-    this.energyLog.forEach(entry => {
+    // Skip hand-edited/corrupt entries so one bad row can't turn averages into NaN
+    const valid = this.energyLog.filter(
+      e => Number.isInteger(e.level) && e.level >= 1 && e.level <= 5 &&
+        Number.isInteger(e.hour) && Number.isInteger(e.dayOfWeek)
+    );
+
+    valid.forEach(entry => {
       // Hourly patterns
       if (!hourlyData[entry.hour]) {
         hourlyData[entry.hour] = [];
@@ -383,58 +389,60 @@ class EnergyTracker {
 }
 
 // CLI Interface
-const args = process.argv.slice(2);
-const command = args[0];
+if (require.main === module) {
+  const args = process.argv.slice(2);
+  const command = args[0];
 
-const tracker = new EnergyTracker();
+  const tracker = new EnergyTracker();
 
-switch (command) {
-  case 'log':
-    const level = parseInt(args[1]);
-    const notes = args.slice(2).join(' ');
+  switch (command) {
+    case 'log':
+      const level = Number(args[1]);
+      const notes = args.slice(2).join(' ');
 
-    if (!level || level < 1 || level > 5) {
-      console.log('Usage: gsd energy log <1-5> [notes]');
-      console.log('\nEnergy Levels:');
-      console.log('  1 - Exhausted');
-      console.log('  2 - Low');
-      console.log('  3 - Moderate');
-      console.log('  4 - Good');
-      console.log('  5 - Peak');
-      process.exit(1);
-    }
+      if (!Number.isInteger(level) || level < 1 || level > 5) {
+        console.log('Usage: gsd energy log <1-5> [notes]');
+        console.log('\nEnergy Levels:');
+        console.log('  1 - Exhausted');
+        console.log('  2 - Low');
+        console.log('  3 - Moderate');
+        console.log('  4 - Good');
+        console.log('  5 - Peak');
+        process.exit(1);
+      }
 
-    tracker.logEnergy(level, notes);
-    break;
+      tracker.logEnergy(level, notes);
+      break;
 
-  case 'report':
-    tracker.generateReport();
-    break;
+    case 'report':
+      tracker.generateReport();
+      break;
 
-  case 'predict':
-    const prediction = tracker.predictEnergy();
-    if (prediction.message) {
-      console.log(prediction.message);
-    } else {
-      console.log(`\n🔮 Energy Prediction for ${new Date().toLocaleTimeString()}`);
-      console.log(`   Level: ${prediction.levelName} (${prediction.predictedLevel}/5)`);
-      console.log(`   Confidence: ${prediction.confidence}`);
-      console.log(`\n   💡 ${prediction.recommendation}\n`);
-    }
-    break;
+    case 'predict':
+      const prediction = tracker.predictEnergy();
+      if (prediction.message) {
+        console.log(prediction.message);
+      } else {
+        console.log(`\n🔮 Energy Prediction for ${new Date().toLocaleTimeString()}`);
+        console.log(`   Level: ${prediction.levelName} (${prediction.predictedLevel}/5)`);
+        console.log(`   Confidence: ${prediction.confidence}`);
+        console.log(`\n   💡 ${prediction.recommendation}\n`);
+      }
+      break;
 
-  case 'export':
-    tracker.exportData();
-    break;
+    case 'export':
+      tracker.exportData();
+      break;
 
-  default:
-    console.log('Energy Tracker - Optimize your work schedule\n');
-    console.log('Usage:');
-    console.log('  gsd energy log <1-5> [notes]  - Log current energy level');
-    console.log('  gsd energy report             - View energy patterns');
-    console.log('  gsd energy predict            - Predict current energy');
-    console.log('  gsd energy export             - Export data');
-    console.log('\nEnergy Levels: 1=Exhausted, 2=Low, 3=Moderate, 4=Good, 5=Peak');
+    default:
+      console.log('Energy Tracker - Optimize your work schedule\n');
+      console.log('Usage:');
+      console.log('  gsd energy log <1-5> [notes]  - Log current energy level');
+      console.log('  gsd energy report             - View energy patterns');
+      console.log('  gsd energy predict            - Predict current energy');
+      console.log('  gsd energy export             - Export data');
+      console.log('\nEnergy Levels: 1=Exhausted, 2=Low, 3=Moderate, 4=Good, 5=Peak');
+  }
 }
 
 module.exports = EnergyTracker;
