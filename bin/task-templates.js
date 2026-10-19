@@ -291,7 +291,7 @@ function getCategories() {
  * @returns {TaskTemplate|null} The template or null if not found
  */
 function getTemplate(name) {
-  return templates[name] || null;
+  return Object.prototype.hasOwnProperty.call(templates, name) ? templates[name] : null;
 }
 
 /**
