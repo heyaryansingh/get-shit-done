@@ -421,7 +421,7 @@ function main() {
 
     case "create":
       const createName = args[1];
-      const title = args.find((a) => a.startsWith("--title="))?.split("=")[1];
+      const title = args.find((a) => a.startsWith("--title="))?.slice("--title=".length);
       if (!createName) {
         console.error("Usage: task-templates create <template-name> --title=<title>");
         process.exit(1);
