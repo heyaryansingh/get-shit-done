@@ -13,32 +13,35 @@
  */
 
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 
-const CACHE_DIR = path.join(process.env.HOME || process.env.USERPROFILE, '.gsd', 'cache');
+const CACHE_DIR = path.join(os.homedir(), '.gsd', 'cache');
 const MAX_CACHE_AGE_DAYS = 30;
 const MAX_CACHE_SIZE_MB = 100;
 
 /**
  * Ensure cache directory exists
  */
-function ensureCacheDir() {
-  if (!fs.existsSync(CACHE_DIR)) {
-    fs.mkdirSync(CACHE_DIR, { recursive: true });
+function ensureCacheDir(dir = CACHE_DIR) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
 }
 
 /**
  * Get all cache files with metadata
  */
-function getCacheFiles() {
-  ensureCacheDir();
-  const files = fs.readdirSync(CACHE_DIR);
+function getCacheFiles(dir = CACHE_DIR) {
+  ensureCacheDir(dir);
+  const files = fs.readdirSync(dir);
 
   return files
     .map(file => {
-      const filePath = path.join(CACHE_DIR, file);
+      const filePath = path.join(dir, file);
       const stats = fs.statSync(filePath);
+      // Subdirectories would make unlinkSync throw EISDIR/EPERM mid-clean
+      if (!stats.isFile()) return null;
       return {
         name: file,
         path: filePath,
@@ -47,6 +50,7 @@ function getCacheFiles() {
         age: Date.now() - stats.mtime.getTime()
       };
     })
+    .filter(Boolean)
     .sort((a, b) => b.modified - a.modified);
 }
 
@@ -88,24 +92,33 @@ function showStats() {
 }
 
 /**
- * Clean old cache entries
+ * Clean old cache entries, then evict oldest entries until under the size cap
  */
-function cleanCache() {
-  const files = getCacheFiles();
-  const maxAge = MAX_CACHE_AGE_DAYS * 24 * 60 * 60 * 1000;
+function pruneCache(dir = CACHE_DIR, maxAgeDays = MAX_CACHE_AGE_DAYS, maxSizeMB = MAX_CACHE_SIZE_MB) {
+  const files = getCacheFiles(dir); // newest first
+  const maxAge = maxAgeDays * 24 * 60 * 60 * 1000;
+  const maxBytes = maxSizeMB * 1024 * 1024;
+  let total = files.reduce((sum, f) => sum + f.size, 0);
   let removed = 0;
   let freedSpace = 0;
 
-  files.forEach(file => {
-    if (file.age > maxAge) {
-      fs.unlinkSync(file.path);
-      removed++;
-      freedSpace += file.size;
-    }
-  });
+  for (let i = files.length - 1; i >= 0; i--) {
+    const file = files[i];
+    if (file.age <= maxAge && total <= maxBytes) continue;
+    fs.unlinkSync(file.path);
+    removed++;
+    freedSpace += file.size;
+    total -= file.size;
+  }
+
+  return { removed, freedSpace };
+}
+
+function cleanCache() {
+  const { removed, freedSpace } = pruneCache();
 
   const freedMB = (freedSpace / (1024 * 1024)).toFixed(2);
-  console.log(`✅ Cleaned ${removed} old cache entries`);
+  console.log(`✅ Cleaned ${removed} old/over-limit cache entries`);
   console.log(`💾 Freed ${freedMB} MB of space`);
 }
 
@@ -138,6 +151,9 @@ function showSize() {
   }
 }
 
+module.exports = { getCacheFiles, pruneCache };
+
+if (require.main === module) {
 // Main CLI
 const command = process.argv[2];
 
@@ -159,8 +175,9 @@ switch (command) {
     console.log('');
     console.log('Commands:');
     console.log('  stats   Show cache statistics');
-    console.log('  clean   Clean old cache entries (>30 days)');
+    console.log(`  clean   Clean old cache entries (>${MAX_CACHE_AGE_DAYS} days) and trim to ${MAX_CACHE_SIZE_MB} MB`);
     console.log('  clear   Clear all cache');
     console.log('  size    Show cache size');
     process.exit(1);
+}
 }
