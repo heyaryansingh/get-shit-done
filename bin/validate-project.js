@@ -200,8 +200,9 @@ class ProjectValidator {
     console.log(`  Completed Plans: ${stats.completedPlans}`);
     console.log(`  Pending Plans:   ${stats.pendingPlans}`);
 
-    const progress = stats.totalPhases > 0
-      ? ((stats.completedPlans / (stats.completedPlans + stats.pendingPlans)) * 100).toFixed(1)
+    const totalPlans = stats.completedPlans + stats.pendingPlans;
+    const progress = totalPlans > 0
+      ? ((stats.completedPlans / totalPlans) * 100).toFixed(1)
       : 0;
     console.log(`  Progress:        ${progress}%\n`);
   }
