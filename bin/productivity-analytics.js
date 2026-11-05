@@ -321,7 +321,9 @@ function calculateSummary() {
 function generateWeeklyReport() {
   const analytics = loadAnalytics();
   const today = new Date();
-  const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+  // Calendar math, not now - 168h: across a DST fall-back, 168h ago lands one
+  // wall-clock hour later, so the day-stepping loop overshot today and dropped it.
+  const weekAgo = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 7);
 
   const weeklyData = {
     startDate: formatDate(weekAgo),
