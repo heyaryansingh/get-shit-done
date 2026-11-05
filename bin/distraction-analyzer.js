@@ -65,7 +65,7 @@ function logDistraction(description, category, duration) {
     id: Date.now().toString(),
     description: description,
     category: category || 'other',
-    duration: parseInt(duration) || 0, // minutes
+    duration: parseFloat(duration) || 0, // minutes
     timestamp: now.toISOString(),
     date: `${now.getFullYear()}-${month}-${day}`,
     hour: now.getHours(),
@@ -338,7 +338,7 @@ function showHelp() {
   console.log('    --duration <minutes>    Duration in minutes');
   console.log('');
   console.log('  analyze                   Analyze distractions');
-  console.log('    --period <day|week|month>  Analysis period (default: week)');
+  console.log('    --period <day|week|month|all>  Analysis period (default: week)');
   console.log('');
   console.log('  report                    Generate comprehensive report');
   console.log('    --detailed              Include recent distraction list');
@@ -394,11 +394,21 @@ try {
         process.exit(1);
       }
 
+      // Reject junk so negative or non-numeric durations can't skew "time lost".
+      if (!/^\d+(\.\d+)?$/.test(duration)) {
+        console.log(chalk.red(`Error: Invalid duration "${duration}". Use non-negative minutes.`));
+        process.exit(1);
+      }
+
       logDistraction(description, category, duration);
       break;
 
     case 'analyze':
       const period = getOption('period', 'week');
+      if (!['day', 'week', 'month', 'all'].includes(period)) {
+        console.log(chalk.red(`Error: Invalid period "${period}". Use day, week, month, or all.`));
+        process.exit(1);
+      }
       analyzeDistractions(period);
       break;
 
