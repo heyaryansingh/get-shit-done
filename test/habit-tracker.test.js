@@ -72,3 +72,11 @@ test('isCompletedToday needs the full target', () => {
 test('isCompletedToday is false for an unknown habit', () => {
   assert.strictEqual(isCompletedToday('nope', habitData(1, { 0: 1 })), false);
 });
+
+test('addHabit rejects a missing name and a non-positive target', () => {
+  const { addHabit } = require('../bin/habit-tracker');
+  assert.strictEqual(addHabit(undefined), false);
+  assert.strictEqual(addHabit('  '), false);
+  assert.strictEqual(addHabit('Read', -3), false);
+  assert.strictEqual(addHabit('Read', 0), false);
+});

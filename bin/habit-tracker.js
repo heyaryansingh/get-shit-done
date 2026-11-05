@@ -42,6 +42,14 @@ function getTodayString() {
  * Add a new habit
  */
 function addHabit(name, target = 1, unit = 'times') {
+  if (typeof name !== 'string' || !name.trim()) {
+    console.log('❌ Habit name is required');
+    return false;
+  }
+  if (!Number.isInteger(target) || target < 1) {
+    console.log('❌ Habit target must be a positive whole number');
+    return false;
+  }
   const data = loadHabits();
 
   const habit = {
