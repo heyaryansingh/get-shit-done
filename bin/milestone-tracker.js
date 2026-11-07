@@ -188,7 +188,7 @@ class MilestoneTracker {
     const remainingPhases = stats.total_phases - stats.completed;
 
     if (velocity.phases_per_week === 0 || velocity.phases_per_week === '0.00') {
-      return { estimated_date: 'Unknown', days_remaining: 'Unknown' };
+      return { estimated_date: 'Unknown', days_remaining: 'Unknown', confidence: this.calculateConfidence(velocity.total_tasks_completed || 0) };
     }
 
     const weeksRemaining = remainingPhases / parseFloat(velocity.phases_per_week);
@@ -248,8 +248,8 @@ class MilestoneTracker {
     report += '📈 VELOCITY METRICS\n';
     report += `   Tasks/Day: ${velocity.tasks_per_day}\n`;
     report += `   Phases/Week: ${velocity.phases_per_week}\n`;
-    report += `   Active Days: ${velocity.days_active}\n`;
-    report += `   Total Tasks: ${velocity.total_tasks_completed}\n\n`;
+    report += `   Active Days: ${velocity.days_active ?? 0}\n`;
+    report += `   Total Tasks: ${velocity.total_tasks_completed ?? 0}\n\n`;
 
     report += '🎯 ESTIMATED COMPLETION\n';
     report += `   Date: ${completion.estimated_date}\n`;

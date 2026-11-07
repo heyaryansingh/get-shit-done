@@ -248,3 +248,11 @@ test('generateReport text output lists every phase', () => {
   assert.match(report, /Phase 3: Polish/);
   assert.match(report, /OVERALL PROGRESS/);
 });
+
+test('text report shows zeros, not undefined, when there is no velocity data', () => {
+  const dir = planningDir({ roadmap: ROADMAP });
+
+  const report = new MilestoneTracker(dir).generateReport('text');
+
+  assert.ok(!report.includes('undefined'));
+});
