@@ -40,7 +40,14 @@ function readJson(file, fallback) {
   }
 
   try {
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    // Valid JSON of the wrong shape (e.g. `null`, or an object where a list is
+    // expected) would crash every caller; treat it like a corrupt file.
+    const kind = (v) => (Array.isArray(v) ? 'array' : v === null ? 'null' : typeof v);
+    if (fallback !== null && typeof fallback === 'object' && kind(parsed) !== kind(fallback)) {
+      throw new Error(`expected ${kind(fallback)}, got ${kind(parsed)}`);
+    }
+    return parsed;
   } catch (error) {
     const backup = `${file}.corrupt-${Date.now()}`;
     try {

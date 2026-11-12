@@ -87,3 +87,12 @@ test('readJson preserves falsy JSON values', () => {
 
   assert.strictEqual(readJson(file, 'fallback'), 0);
 });
+
+test('valid JSON of the wrong shape falls back instead of crashing callers', () => {
+  const file = tempFile('state.json');
+  fs.writeFileSync(file, 'null');
+
+  assert.deepStrictEqual(readJson(file, { goals: [] }), { goals: [] });
+  fs.writeFileSync(file, '{"a":1}');
+  assert.deepStrictEqual(readJson(file, []), []);
+});
