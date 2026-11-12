@@ -242,9 +242,9 @@ function completeMilestone(goalId, milestoneIndex) {
     return false;
   }
 
-  const index = parseInt(milestoneIndex) - 1;
+  const index = Number(milestoneIndex) - 1;
 
-  if (index < 0 || index >= goal.milestones.length) {
+  if (!Number.isInteger(index) || index < 0 || index >= goal.milestones.length) {
     console.log(`❌ Invalid milestone index: ${milestoneIndex}`);
     return false;
   }
