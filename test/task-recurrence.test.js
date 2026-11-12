@@ -67,3 +67,19 @@ test('an overdue task stays due', () => {
 
   assert.strictEqual(isDue({ next_due: formatDate(past) }), true);
 });
+
+test('add rejects an empty title and saves nothing', () => {
+  const { spawnSync } = require('node:child_process');
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-rec-'));
+  const run = (...a) => spawnSync(process.execPath, [path.join(__dirname, '../bin/task-recurrence.js'), ...a], {
+    env: { ...process.env, GSD_DATA_DIR: dir }, encoding: 'utf8',
+  });
+  assert.strictEqual(run('add', '   ', 'daily').status, 1);
+  assert.strictEqual(fs.existsSync(path.join(dir, 'recurrence.json')), false);
+  assert.strictEqual(run('add', '  Review  ', 'daily').status, 0);
+  const saved = JSON.parse(fs.readFileSync(path.join(dir, 'recurrence.json'), 'utf8'));
+  assert.strictEqual(saved[0].title, 'Review');
+});

@@ -157,6 +157,11 @@ function formatDate(d) {
  * @param {string} [category] - Optional category/tag.
  */
 function addRecurrence(title, frequency, category) {
+  title = (title || '').trim();
+  if (!title) {
+    console.error(`${red}Title must not be empty${reset}`);
+    process.exit(1);
+  }
   if (!Object.values(Frequency).includes(frequency)) {
     console.error(`${red}Invalid frequency: ${frequency}${reset}`);
     console.log(`Valid options: ${Object.values(Frequency).join(', ')}`);
