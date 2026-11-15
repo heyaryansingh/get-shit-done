@@ -36,7 +36,7 @@ function withTracker(fn) {
 
 test('constructor starts with empty tasks/completed when no file exists', () => {
   withTracker((tracker) => {
-    assert.deepEqual(tracker.dependencies, { tasks: {}, completed: [] });
+    assert.deepEqual({ ...tracker.dependencies, tasks: { ...tracker.dependencies.tasks } }, { tasks: {}, completed: [] });
   });
 });
 
@@ -158,4 +158,14 @@ test('save/load round-trip persists state across instances', () => {
       fs.unlinkSync(filePath);
     }
   }
+});
+
+test('task ids matching Object.prototype keys are treated as ordinary tasks', () => {
+  withTracker((tracker, filePath) => {
+    tracker.addDependency('constructor', '__proto__');
+    tracker.addDependency('toString', 'constructor');
+    const reloaded = new DependencyTracker(filePath);
+    assert.deepEqual(reloaded.dependencies.tasks['constructor'].dependsOn, ['__proto__']);
+    assert.deepEqual(reloaded.dependencies.tasks['toString'].dependsOn, ['constructor']);
+  });
 });

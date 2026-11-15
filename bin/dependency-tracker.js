@@ -32,7 +32,10 @@ class DependencyTracker {
    * Load dependencies from file or create empty structure
    */
   load() {
-    return readJson(this.filePath, { tasks: {}, completed: [] });
+    const data = readJson(this.filePath, { tasks: {}, completed: [] });
+    // Null-prototype map so task ids like 'constructor' or '__proto__' are plain keys.
+    data.tasks = Object.assign(Object.create(null), data.tasks);
+    return data;
   }
 
   /**
