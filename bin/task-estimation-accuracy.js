@@ -182,26 +182,26 @@ function calculateAccuracyByTag() {
   const history = loadHistory();
   const records = buildEstimationRecords(history);
 
-  const byTag = {};
+  // Map + fromEntries: tags like "constructor" or "__proto__" are plain keys,
+  // not inherited Object.prototype members (which crashed on .push).
+  const byTag = new Map();
   for (const record of records) {
     const tags = record.tags.length > 0 ? record.tags : ['untagged'];
     for (const tag of tags) {
-      if (!byTag[tag]) {
-        byTag[tag] = [];
+      if (!byTag.has(tag)) {
+        byTag.set(tag, []);
       }
-      byTag[tag].push(record.ratio);
+      byTag.get(tag).push(record.ratio);
     }
   }
 
-  const result = {};
-  for (const [tag, ratios] of Object.entries(byTag)) {
-    const averageRatio = ratios.reduce((sum, r) => sum + r, 0) / ratios.length;
-    result[tag] = {
+  const result = Object.fromEntries(
+    [...byTag].map(([tag, ratios]) => [tag, {
       sampleSize: ratios.length,
-      averageRatio: Math.round(averageRatio * 100) / 100,
+      averageRatio: Math.round((ratios.reduce((sum, r) => sum + r, 0) / ratios.length) * 100) / 100,
       calibrationFactor: Math.round(median(ratios) * 100) / 100,
-    };
-  }
+    }])
+  );
 
   return result;
 }

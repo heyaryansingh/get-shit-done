@@ -79,3 +79,23 @@ test('buildEstimationRecords ignores non-array tags instead of passing a string 
 
   assert.deepEqual(record.tags, []);
 });
+
+test('calculateAccuracyByTag handles tags named like Object.prototype members', () => {
+  const { execFileSync } = require('node:child_process');
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), 'gsd-home-'));
+  fs.mkdirSync(path.join(home, '.get-shit-done'));
+  fs.writeFileSync(path.join(home, '.get-shit-done', 'history.json'), JSON.stringify([
+    { id: '1', title: 'A', status: 'completed', estimatedMinutes: 10, actualMinutes: 20, tags: ['constructor', '__proto__'] },
+  ]));
+  const script = `console.log(JSON.stringify(require(${JSON.stringify(path.resolve(__dirname, '../bin/task-estimation-accuracy.js'))}).calculateAccuracyByTag()))`;
+  const out = execFileSync(process.execPath, ['-e', script], {
+    env: { ...process.env, HOME: home, USERPROFILE: home },
+    encoding: 'utf8',
+  });
+  const byTag = JSON.parse(out);
+  assert.equal(byTag.constructor.sampleSize, 1);
+  assert.equal(byTag.__proto__.averageRatio, 2);
+});
