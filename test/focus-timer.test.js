@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 
-const { calculateStats } = require('../bin/focus-timer');
+const { calculateStats, updateSettings } = require('../bin/focus-timer');
 const { formatDate } = require('../bin/task-recurrence');
 
 /** A completed focus session starting at the given local hour, `daysAgo` back. */
@@ -72,4 +72,9 @@ test('empty data yields zeroed stats', () => {
   assert.strictEqual(stats.todayMinutes, 0);
   assert.strictEqual(stats.totalMinutes, 0);
   assert.strictEqual(stats.avgSessionLength, 0);
+});
+
+test('updateSettings rejects non-positive values before saving', () => {
+  assert.throws(() => updateSettings({ focusDuration: -5 }), /Invalid focusDuration/);
+  assert.throws(() => updateSettings({ shortBreak: 1.5 }), /Invalid shortBreak/);
 });

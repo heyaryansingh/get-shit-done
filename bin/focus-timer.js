@@ -383,6 +383,11 @@ function printStats() {
  * @param {Object} newSettings - Settings to update
  */
 function updateSettings(newSettings) {
+  for (const [key, value] of Object.entries(newSettings)) {
+    if (!Number.isInteger(value) || value <= 0) {
+      throw new Error(`Invalid ${key}: must be a positive whole number`);
+    }
+  }
   const focusData = loadFocusData();
   focusData.settings = { ...focusData.settings, ...newSettings };
   saveFocusData(focusData);
