@@ -69,3 +69,13 @@ test('buildEstimationRecords excludes negative estimatedMinutes', () => {
 
   assert.deepEqual(buildEstimationRecords(history), []);
 });
+
+test('buildEstimationRecords ignores non-array tags instead of passing a string through', () => {
+  const history = [
+    { id: '1', title: 'A', status: 'completed', estimatedMinutes: 10, actualMinutes: 10, tags: 'api' },
+  ];
+
+  const [record] = buildEstimationRecords(history);
+
+  assert.deepEqual(record.tags, []);
+});

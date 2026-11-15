@@ -96,7 +96,7 @@ function buildEstimationRecords(history) {
       actualMinutes: task.actualMinutes,
       deltaMinutes: task.actualMinutes - task.estimatedMinutes,
       ratio: task.actualMinutes / task.estimatedMinutes,
-      tags: task.tags || [],
+      tags: Array.isArray(task.tags) ? task.tags : [],
     }));
 }
 
